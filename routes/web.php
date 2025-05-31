@@ -34,7 +34,7 @@ Route::get('/', function () {
     abort(404);
 });
 
-Auth::routes(['register' => false]);
+// Auth::routes(['register' => false]);
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
