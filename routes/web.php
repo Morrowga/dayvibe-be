@@ -2,6 +2,7 @@
 
 use Carbon\Carbon;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +33,8 @@ Route::get('/', function () {
     // ]);
     abort(404);
 });
+
+Auth::routes(['register' => false]);
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
