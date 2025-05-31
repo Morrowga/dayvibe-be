@@ -4,23 +4,17 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
-// Reactive variables
-const selectedFile = ref(null);
-const imagePreview = ref(null);
+// Reactive variables - keeping only what's needed for find mode
 const isUploading = ref(false);
 const isSave = ref(false);
 const successMessage = ref(false);
 const uploadError = ref('');
 const uploadResult = ref([]);
-const dragActive = ref(false);
 
-// New variables for code search
+// Variables for code search
 const searchMode = ref('upload'); // 'upload' or 'find'
 const codeNumber = ref('');
 const isSearching = ref(false);
-
-// File input reference
-const fileInput = ref(null);
 
 // Check for code parameter on component mount
 onMounted(() => {
@@ -40,61 +34,6 @@ onMounted(() => {
 const switchMode = (mode) => {
     searchMode.value = mode;
     clearForm();
-};
-
-// Handle file selection
-const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    processFile(file);
-};
-
-// Handle drag and drop
-const handleDrop = (event) => {
-    event.preventDefault();
-    dragActive.value = false;
-
-    const files = event.dataTransfer.files;
-    if (files.length > 0) {
-        processFile(files[0]);
-    }
-};
-
-const handleDragOver = (event) => {
-    event.preventDefault();
-    dragActive.value = true;
-};
-
-const handleDragLeave = (event) => {
-    event.preventDefault();
-    dragActive.value = false;
-};
-
-// Process selected file
-const processFile = (file) => {
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-        uploadError.value = 'Please select a valid image file';
-        return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        uploadError.value = 'File size must be less than 5MB';
-        return;
-    }
-
-    selectedFile.value = file;
-    uploadError.value = '';
-    uploadResult.value = []; // Clear previous result
-
-    // Create image preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        imagePreview.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
 };
 
 // Search by code number
@@ -135,46 +74,6 @@ const searchByCode = async () => {
     }
 };
 
-// Upload and process QR code using AXIOS
-const uploadQRCode = async () => {
-    if (!selectedFile.value) {
-        uploadError.value = 'Please select an image file first';
-        return;
-    }
-
-    isUploading.value = true;
-    uploadError.value = '';
-
-    try {
-        const formData = new FormData();
-        formData.append('mode', 'upload');
-        formData.append('qr_image', selectedFile.value);
-
-        const response = await axios.post('/api/scanner', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-
-        uploadResult.value = response.data;
-        console.log(response);
-    } catch (error) {
-        if (error.response) {
-            if (error.response.data.errors) {
-                const errors = error.response.data.errors;
-                uploadError.value = errors.qr_image ? errors.qr_image[0] : (errors.general || 'Failed to process QR code');
-            } else {
-                uploadError.value = error.response.data.message || 'Failed to process QR code';
-            }
-        } else {
-            uploadError.value = 'Network error occurred';
-        }
-        console.error('Upload error:', error);
-    } finally {
-        isUploading.value = false;
-    }
-};
-
 const saveData = async () => {
     isSave.value = true;
 
@@ -205,12 +104,7 @@ const saveData = async () => {
 
 // Clear form
 const clearForm = () => {
-    selectedFile.value = null;
-    imagePreview.value = null;
     codeNumber.value = '';
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
     uploadResult.value = [];
     successMessage.value = '';
     uploadError.value = '';
@@ -221,11 +115,6 @@ const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
         console.log('Copied to clipboard');
     });
-};
-
-// Trigger file input click
-const triggerFileInput = () => {
-    fileInput.value?.click();
 };
 </script>
 
@@ -271,77 +160,19 @@ const triggerFileInput = () => {
                     </div>
                 </div>
 
-                <!-- QR Upload Section -->
+                <!-- QR Upload Section - Empty Content -->
                 <div v-if="searchMode === 'upload'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Upload QR Code Image</h3>
 
-                        <!-- File Input (Hidden) -->
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            accept="image/*"
-                            @change="handleFileSelect"
-                            class="hidden"
-                        />
-
-                        <!-- Drop Zone -->
-                        <div
-                            @drop="handleDrop"
-                            @dragover="handleDragOver"
-                            @dragleave="handleDragLeave"
-                            @click="triggerFileInput"
-                            :class="[
-                                'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors duration-200',
-                                dragActive
-                                    ? 'border-blue-400 bg-blue-50'
-                                    : 'border-gray-300 hover:border-gray-400'
-                            ]"
-                        >
-                            <div class="flex flex-col items-center">
-                                <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        <!-- Empty content area -->
+                        <div class="border-2 border-dashed border-gray-200 rounded-lg p-12 text-center">
+                            <div class="text-gray-400">
+                                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                <p class="text-lg font-medium text-gray-700 mb-2">
-                                    {{ dragActive ? 'Drop your QR code image here' : 'Click to upload or drag and drop' }}
-                                </p>
-                                <p class="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
-                            </div>
-                        </div>
-
-                        <!-- Image Preview -->
-                        <div v-if="imagePreview" class="mt-6">
-                            <h4 class="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
-                            <div class="flex items-start space-x-4">
-                                <img :src="imagePreview" alt="QR Code Preview" class="w-32 h-32 object-contain border rounded">
-                                <div class="flex-1">
-                                    <p class="text-sm text-gray-600 mb-2">
-                                        <strong>File:</strong> {{ selectedFile?.name }}
-                                    </p>
-                                    <p class="text-sm text-gray-600 mb-4">
-                                        <strong>Size:</strong> {{ Math.round(selectedFile?.size / 1024) }} KB
-                                    </p>
-                                    <div class="w-full md:w-1/2">
-                                        <button
-                                            @click="uploadQRCode"
-                                            :disabled="isUploading"
-                                            class="bg-blue-500 hover:bg-blue-700 w-full mt-2 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded transition duration-200"
-                                        >
-                                            {{ isUploading ? 'Processing...' : 'Process QR Code' }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Loading Overlay for Upload -->
-                        <div v-if="isUploading" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-                            <div class="flex items-center space-x-2">
-                                <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span class="text-blue-700">Processing QR code...</span>
+                                <p class="text-lg">Upload functionality temporarily disabled</p>
+                                <p class="text-sm mt-2">Please use "Find by Code Number" instead</p>
                             </div>
                         </div>
                     </div>
@@ -398,21 +229,6 @@ const triggerFileInput = () => {
                         </div>
                     </div>
                 </div>
-
-                <!-- Results Card - Dev Info -->
-                <!-- <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" v-if="uploadResult && uploadResult.data">
-                    <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">QR Code Dev</h3>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <p class="text-sm text-gray-600 mb-1">Decoded Data:</p>
-                                    <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
 
                 <!-- Results Card - QR Data -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" v-if="uploadResult && uploadResult.data">

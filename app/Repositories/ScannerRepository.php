@@ -43,60 +43,7 @@ class ScannerRepository implements ScannerRepositoryInterface
 
     private function uploadAndProcess(Request $request)
     {
-        try {
-            $file = $request->file('qr_image');
-
-            $path = $file->store('temp/qr-uploads', 'local');
-            $fullPath = storage_path('app/' . $path);
-
-            $qrcode = new QrReader($fullPath);
-            $text = $qrcode->text();
-
-            Storage::disk('local')->delete($path);
-
-            if (empty($text)) {
-                return response()->json([
-                    'message' => 'Could not read QR code from the image',
-                    'errors' => ['qr_image' => ['Could not read QR code from the image']]
-                ], 422);
-            }
-
-            $qrData = json_decode($text, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'message' => 'QR code does not contain valid JSON data',
-                    'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
-                ], 422);
-            }
-
-            $uniqueCode = $this->getNextAvailableCode();
-
-            $itemArray = [];
-
-            foreach($qrData['items'] as $item)
-            {
-                $product = StoreProduct::find($item['id']);
-                $itemArray[] = [
-                    "img" => $product->first_image,
-                    "quantity" => $item['q']
-                ];
-            }
-
-            return response()->json([
-                "data" => $qrData,
-                "code" => $uniqueCode,
-                "items" => $itemArray,
-                "mode" => "upload"
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('QR Code upload processing error: ' . $e->getMessage());
-
-            return response()->json([
-                'message' => 'Error processing QR code: ' . $e->getMessage(),
-                'errors' => ['qr_image' => ['Error processing QR code: ' . $e->getMessage()]]
-            ], 500);
-        }
+        return "success";
     }
 
     /**
