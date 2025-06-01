@@ -129,6 +129,9 @@ const searchByCode = async () => {
         } else {
             uploadError.value = 'Network error occurred';
         }
+
+        uploadResult.value = [];
+        
         console.error('Search error:', error);
     } finally {
         isSearching.value = false;
@@ -494,6 +497,12 @@ const triggerFileInput = () => {
                                 <div class="flex-1">
                                     <p class="text-sm text-gray-600 mb-1">Order Code:</p>
                                     <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.code }}</p>
+                                    <p class="text-sm text-gray-600 my-2">Name:</p>
+                                    <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.n }}</p>
+                                    <p class="text-sm text-gray-600 my-2">Phone:</p>
+                                    <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.p }}</p>
+                                    <p class="text-sm text-gray-600 my-2">City:</p>
+                                    <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.c }}</p>
                                     <p class="font-mono bg-green-100 p-2 rounded border break-all mt-3 text-green-800">
                                         ✅ Order already exists in the system
                                     </p>
