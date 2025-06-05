@@ -6,7 +6,7 @@ return [
      * The disk on which to store added files and derived images by default. Choose
      * one or more of the disks you've configured in config/filesystems.php.
      */
-    'disk_name' => env('MEDIA_DISK', 'public'),
+    'disk_name' => env('MEDIA_DISK', 's3'),
 
     /*
      * The maximum file size of an item in bytes.
@@ -216,6 +216,8 @@ return [
     'media_downloader_ssl' => env('MEDIA_DOWNLOADER_SSL', true),
 
     'remote' => [
+        'disk_name' => 's3',
+        'visibility' => 'public',
         /*
          * Any extra headers that should be included when uploading media to
          * a remote disk. Even though supported headers may vary between
