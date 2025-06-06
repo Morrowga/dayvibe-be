@@ -2,7 +2,7 @@
 
 namespace App\Interfaces\Store;
 
-use App\Models\Order;
+use App\Models\QROrder;
 use Illuminate\Http\Request;
 
 interface OrderRepositoryInterface
@@ -11,7 +11,7 @@ interface OrderRepositoryInterface
 
     public function store(Request $request);
 
-    public function update(Request $request, Order $order);
+    public function update(Request $request, QROrder $order);
 
-    public function delete(Order $order);
+    public function delete(QROrder $order);
 }

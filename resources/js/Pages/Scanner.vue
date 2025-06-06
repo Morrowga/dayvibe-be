@@ -131,7 +131,7 @@ const searchByCode = async () => {
         }
 
         uploadResult.value = [];
-        
+
         console.error('Search error:', error);
     } finally {
         isSearching.value = false;
@@ -448,6 +448,7 @@ const triggerFileInput = () => {
                                         </div>
 
                                         <p>Quantity - {{ item.quantity  }}</p>
+                                        <p>No. {{ item.id  }}</p>
                                     </VCol>
                                 </VRow>
                             </div>

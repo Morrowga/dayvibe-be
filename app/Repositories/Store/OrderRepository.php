@@ -61,7 +61,7 @@ class OrderRepository implements OrderRepositoryInterface
         return $uniqueCode;
     }
 
-    public function update(Request $request, Order $order)
+    public function update(Request $request, QROrder $order)
     {
         DB::beginTransaction();
         try {
@@ -76,7 +76,7 @@ class OrderRepository implements OrderRepositoryInterface
         }
     }
 
-    public function delete(Order $order)
+    public function delete(QROrder $order)
     {
         try {
             $order->delete();

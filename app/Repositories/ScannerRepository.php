@@ -77,6 +77,7 @@ class ScannerRepository implements ScannerRepositoryInterface
             {
                 $product = StoreProduct::find($item['id']);
                 $itemArray[] = [
+                    "id" => $product->id,
                     "img" => $product->first_image,
                     "quantity" => $item['q']
                 ];
@@ -130,6 +131,7 @@ class ScannerRepository implements ScannerRepositoryInterface
                 $product = StoreProduct::find($item['id']);
                 $itemArray[] = [
                     "img" => $product->first_image,
+                    "id" => $product->id,
                     "quantity" => $item['q']
                 ];
             }

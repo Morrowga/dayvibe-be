@@ -31,6 +31,10 @@ const clientSidePaginationOptions = ref({
 
 const columns = ref([
     {
+        label: 'Id',
+        field: 'id',
+    },
+    {
         label: 'Image',
         field: 'image_urls',
     },

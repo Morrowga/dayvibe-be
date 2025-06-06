@@ -13,7 +13,11 @@
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+<<<<<<< HEAD
         "league/flysystem-aws-s3-v3": "*",
+=======
+        "league/flysystem-aws-s3-v3": "^3.0",
+>>>>>>> 5905aae9901331b9b84bba0deea51936f0a42859
         "spatie/laravel-medialibrary": "^11.12",
         "tightenco/ziggy": "^2.0",
         "tymon/jwt-auth": "^2.1"

@@ -4,7 +4,11 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+<<<<<<< HEAD
     "content-hash": "ac24e1f36189b52a0fa28c5e4168fd8c",
+=======
+    "content-hash": "a62f90d590a8013548af2eca018c1751",
+>>>>>>> 5905aae9901331b9b84bba0deea51936f0a42859
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -62,6 +66,7 @@
         },
         {
             "name": "aws/aws-sdk-php",
+<<<<<<< HEAD
             "version": "3.344.1",
             "source": {
                 "type": "git",
@@ -72,6 +77,18 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/7ff4b73f2d6550949be14b8822e100963e068705",
                 "reference": "7ff4b73f2d6550949be14b8822e100963e068705",
+=======
+            "version": "3.344.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aws/aws-sdk-php.git",
+                "reference": "787a8ec6301657d9cbdb389db4fa92243c68666a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/787a8ec6301657d9cbdb389db4fa92243c68666a",
+                "reference": "787a8ec6301657d9cbdb389db4fa92243c68666a",
+>>>>>>> 5905aae9901331b9b84bba0deea51936f0a42859
                 "shasum": ""
             },
             "require": {
@@ -153,9 +170,15 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
+<<<<<<< HEAD
                 "source": "https://github.com/aws/aws-sdk-php/tree/3.344.1"
             },
             "time": "2025-06-05T18:09:40+00:00"
+=======
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.344.0"
+            },
+            "time": "2025-06-04T18:36:41+00:00"
+>>>>>>> 5905aae9901331b9b84bba0deea51936f0a42859
         },
         {
             "name": "brick/math",

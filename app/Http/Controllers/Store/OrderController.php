@@ -68,7 +68,7 @@ class OrderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Order $order)
+    public function update(Request $request, QROrder $order)
     {
         $updateOrder = $this->orderRepository->update($request, $order);
 
@@ -78,7 +78,7 @@ class OrderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Order $order)
+    public function destroy(QROrder $order)
     {
         $deleteOrder = $this->orderRepository->delete($order);
 
