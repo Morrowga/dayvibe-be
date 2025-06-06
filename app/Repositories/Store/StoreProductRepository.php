@@ -36,7 +36,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
                 ->orderBy('created_at', 'DESC')
-                ->paginate(40);
+                ->paginate(30);
 
             return $this->success('Fetched Store Products', $storeProducts);
         } catch (\Exception $e) {
