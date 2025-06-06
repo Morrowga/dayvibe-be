@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Size extends Model
 {
-    use HasFactory, UUID;
+    use HasFactory;
 
     protected $fillable = ['name', 'price'];
 
