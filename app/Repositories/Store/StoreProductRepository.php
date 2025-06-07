@@ -6,6 +6,7 @@ use App\Models\StoreProduct;
 use Illuminate\Http\Request;
 use App\Traits\CRUDResponses;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Interfaces\Store\StoreProductRepositoryInterface;
 
 class StoreProductRepository implements StoreProductRepositoryInterface
@@ -26,7 +27,8 @@ class StoreProductRepository implements StoreProductRepositoryInterface
             $category = $request->query('category');
             $searchQuery = $request->query('q');
 
-            $storeProducts = StoreProduct::with(['category.sizes', 'media'])
+            // Get all items first, then shuffle
+            $allProducts = StoreProduct::with(['category.sizes', 'media'])
                 ->when($category, function ($query) use ($category) {
                     $query->whereHas('category', function ($q) use ($category) {
                         $q->where('name_en', $category);
@@ -37,20 +39,23 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 })
                 ->orderBy('created_at', 'DESC')
                 ->get()
-                ->shuffle() // Shuffle the collection
-                ->paginate(30); // Note: You'll need to manually paginate
+                ->shuffle();
 
-            // Manual pagination since shuffle() returns a Collection
+            // Manual pagination
             $currentPage = $request->query('page', 1);
             $perPage = 30;
-            $paginatedItems = $storeProducts->forPage($currentPage, $perPage);
+
+            $paginatedItems = $allProducts->forPage($currentPage, $perPage)->values();
 
             $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
                 $paginatedItems,
-                $storeProducts->count(),
+                $allProducts->count(),
                 $perPage,
                 $currentPage,
-                ['path' => $request->url(), 'query' => $request->query()]
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query()
+                ]
             );
 
             return $this->success('Fetched Store Products', $paginator);
