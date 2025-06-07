@@ -37,7 +37,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 ->when($searchQuery, function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
-                ->inRandomOrder() // Database-level randomization
+                ->inRandomOrder()
                 ->paginate($perPage);
 
             return $this->success('Fetched Store Products', $products);
