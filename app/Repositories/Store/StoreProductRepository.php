@@ -26,9 +26,9 @@ class StoreProductRepository implements StoreProductRepositoryInterface
         try {
             $category = $request->query('category');
             $searchQuery = $request->query('q');
+            $perPage = 30;
 
-            // Get all items first, then shuffle
-            $allProducts = StoreProduct::with(['category.sizes', 'media'])
+            $products = StoreProduct::with(['category.sizes', 'media'])
                 ->when($category, function ($query) use ($category) {
                     $query->whereHas('category', function ($q) use ($category) {
                         $q->where('name_en', $category);
@@ -37,28 +37,10 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 ->when($searchQuery, function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
-                ->orderBy('created_at', 'DESC')
-                ->get()
-                ->shuffle();
+                ->inRandomOrder() // Database-level randomization
+                ->paginate($perPage);
 
-            // Manual pagination
-            $currentPage = $request->query('page', 1);
-            $perPage = 30;
-
-            $paginatedItems = $allProducts->forPage($currentPage, $perPage)->values();
-
-            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-                $paginatedItems,
-                $allProducts->count(),
-                $perPage,
-                $currentPage,
-                [
-                    'path' => $request->url(),
-                    'query' => $request->query()
-                ]
-            );
-
-            return $this->success('Fetched Store Products', $paginator);
+            return $this->success('Fetched Store Products', $products);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
