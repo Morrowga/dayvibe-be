@@ -36,9 +36,24 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
                 ->orderBy('created_at', 'DESC')
-                ->paginate(30);
+                ->get()
+                ->shuffle() // Shuffle the collection
+                ->paginate(30); // Note: You'll need to manually paginate
 
-            return $this->success('Fetched Store Products', $storeProducts);
+            // Manual pagination since shuffle() returns a Collection
+            $currentPage = $request->query('page', 1);
+            $perPage = 30;
+            $paginatedItems = $storeProducts->forPage($currentPage, $perPage);
+
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                $paginatedItems,
+                $storeProducts->count(),
+                $perPage,
+                $currentPage,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+
+            return $this->success('Fetched Store Products', $paginator);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
