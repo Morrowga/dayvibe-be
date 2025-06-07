@@ -92,6 +92,7 @@ class StoreProductController extends Controller
     {
         $updateStoreProduct = $this->storeProductRepository->update($request, $store_product);
 
+        return $updateStoreProduct;
         return redirect()->route('store-products.index');
     }
 

@@ -8,9 +8,10 @@ import { computed, ref } from 'vue';
 
 const props = defineProps(['store_product', 'categories', 'sizes']);
 
-console.log(props?.store_product?.image_urls);
+console.log(props?.store_product?.og_image_urls);
+const makeDisable = ref(false);
 
-const previewUrls = ref(props?.store_product?.image_urls?.length > 0 ? props?.store_product?.image_urls : []);
+const previewUrls = ref(props?.store_product?.og_image_urls?.length > 0 ? props?.store_product?.og_image_urls : []);
 
 const form = useForm({
     name: props?.store_product?.name ?? '',
@@ -35,6 +36,7 @@ const previewChange = (urls) => {
 }
 
 const formSubmit = () => {
+    makeDisable.value = true
     const isEdit = Boolean(props?.store_product);
 
     const routeLink = isEdit ? route('store-products.update', props.store_product.id) + '?_method=PUT' : route('store-products.store');
@@ -54,11 +56,10 @@ const formSubmit = () => {
 }
 
 const updateDeleteImages = (id) => {
+    console.log('updateDeleteImages called with ID:', id); // Add this line
     form.delete_images.push(id)
-
-    console.log(form.delete_images);
+    console.log('Current delete_images array:', form.delete_images);
 }
-
 
 </script>
 
@@ -184,7 +185,7 @@ const updateDeleteImages = (id) => {
                                 </VCol>
                             </VRow>
                             <div class="my-5 d-flex justify-end">
-                                <VBtn type="submit" color="primary">{{ props?.store_product ? 'Update' : 'Create' }}</VBtn>
+                                <VBtn type="submit" color="primary" :disabled="makeDisable">{{ props?.store_product ? 'Update' : 'Create' }}</VBtn>
                             </div>
                         </form>
 

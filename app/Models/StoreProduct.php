@@ -17,7 +17,7 @@ class StoreProduct extends Model implements HasMedia
 
     protected $table = 'store_products';
 
-    protected $appends = ['image_urls', 'first_image'];
+    protected $appends = ['image_urls', 'first_image', 'og_image_urls']; // Added og_image_urls
 
     protected $casts = [
         'active' => 'boolean',
@@ -32,11 +32,19 @@ class StoreProduct extends Model implements HasMedia
     public function getImageUrlsAttribute()
     {
         return $this->getMedia('store_product_images')->map(function ($media) {
-            // Use webp if it exists, otherwise fallback to original
             $webpUrl = $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
 
             return [
                 'url' => $webpUrl,
+            ];
+        });
+    }
+
+    public function getOgImageUrlsAttribute()
+    {
+        return $this->getMedia('store_product_images')->map(function ($media) {
+            return [
+                'url' => $media->getUrl(),
             ];
         });
     }
@@ -59,6 +67,6 @@ class StoreProduct extends Model implements HasMedia
         $this->addMediaConversion('webp')
             ->format('webp')
             ->quality(75)
-            ->nonQueued(); // remove this line if using queue
+            ->nonQueued();
     }
 }
