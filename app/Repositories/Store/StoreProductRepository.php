@@ -34,10 +34,10 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                         $q->where('name_en', $category);
                     });
                 })
-                ->when($searchQuery && $searchQuery != 'new', function ($query) use ($searchQuery) {
+              ->when($searchQuery && $searchQuery !== 'New', function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
-                ->when($searchQuery == 'new', function ($query) {
+                ->when($searchQuery === 'New', function ($query) {
                     $query->orderBy('created_at', 'desc');
                 }, function ($query) {
                     $query->inRandomOrder();
