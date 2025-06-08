@@ -83,7 +83,11 @@ const removePreview = (index, url) => {
   form.value.images = form.value.images.filter((file) => file !== removedFile); // Remove file from form.images
   emit("filesSelected", form.value.images); // Emit updated files array
 
-  let removImg = props?.media.find(item => item.original_url === url);
+  // Extract ID from URL (e.g., "https://api.thedayvibe.com/media/25" -> "25")
+  const urlId = url.split('/').pop(); // Gets the last part after the last "/"
+
+  // Find item by ID instead of original_url
+  let removImg = props?.media.find(item => item.id == urlId); // Use == for type flexibility
 
   emit('updateDeleteImages', removImg.id)
 };
