@@ -10,7 +10,6 @@ class MediaController extends Controller
 {
     public function show(Media $media)
     {
-        abort_unless(auth()->check(), 403);
-        return redirect($media->getUrl());
+        return response()->file($media->getUrl('webp'));
     }
 }
