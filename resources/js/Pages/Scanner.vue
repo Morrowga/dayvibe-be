@@ -452,7 +452,7 @@ const triggerFileInput = () => {
                                     </VCol>
                                 </VRow>
                             </div>
-                            <div>
+                            <div v-if="uploadResult?.items?.length > 0">
                                 <p class="text-sm text-gray-600 mb-1">Order Code:</p>
                                 <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult?.code }}</p>
                                 <p class="text-sm text-gray-600 my-2">Name:</p>
