@@ -45,23 +45,26 @@ class ScannerRepository implements ScannerRepositoryInterface
     {
         try {
             $file = $request->file('qr_image');
-
             $path = $file->store('temp/qr-uploads', 'local');
             $fullPath = storage_path('app/' . $path);
 
-            $qrcode = new QrReader($fullPath);
-            $text = $qrcode->text();
+            $qrText = $this->detectQRWithExternalService($fullPath);
+
+            if (empty($qrText)) {
+                $qrcode = new QrReader($fullPath);
+                $qrText = $qrcode->text();
+            }
 
             Storage::disk('local')->delete($path);
 
-            if (empty($text)) {
+            if (empty($qrText)) {
                 return response()->json([
-                    'message' => 'Could not read QR code from the image',
-                    'errors' => ['qr_image' => ['Could not read QR code from the image']]
+                    'message' => 'Could not detect or read QR code from the image',
+                    'errors' => ['qr_image' => ['Could not detect or read QR code from the image']]
                 ], 422);
             }
 
-            $qrData = json_decode($text, true);
+            $qrData = json_decode($qrText, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return response()->json([
                     'message' => 'QR code does not contain valid JSON data',
@@ -73,14 +76,16 @@ class ScannerRepository implements ScannerRepositoryInterface
 
             $itemArray = [];
 
-            foreach($qrData['items'] as $item)
-            {
+            foreach($qrData['items'] as $item) {
                 $product = StoreProduct::find($item['id']);
-                $itemArray[] = [
-                    "id" => $product->id,
-                    "img" => $product->first_image,
-                    "quantity" => $item['q']
-                ];
+                if(!empty($product))
+                {
+                    $itemArray[] = [
+                        "id" => $product->id,
+                        "img" => $product->first_image,
+                        "quantity" => $item['q']
+                    ];
+                }
             }
 
             return response()->json([
@@ -92,11 +97,33 @@ class ScannerRepository implements ScannerRepositoryInterface
 
         } catch (\Exception $e) {
             Log::error('QR Code upload processing error: ' . $e->getMessage());
-
             return response()->json([
                 'message' => 'Error processing QR code: ' . $e->getMessage(),
                 'errors' => ['qr_image' => ['Error processing QR code: ' . $e->getMessage()]]
             ], 500);
+        }
+    }
+
+    private function detectQRWithExternalService($imagePath)
+    {
+        try {
+            $response = Http::timeout(30)
+                ->attach('file', file_get_contents($imagePath), basename($imagePath))
+                ->post('https://api.qrserver.com/v1/read-qr-code/');
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                if (isset($data[0]['symbol'][0]['data']) && !empty($data[0]['symbol'][0]['data'])) {
+                    return $data[0]['symbol'][0]['data'];
+                }
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('External QR detection failed: ' . $e->getMessage());
+            return null;
         }
     }
 
