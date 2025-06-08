@@ -39,8 +39,6 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 })
                 ->when($searchQuery === 'New', function ($query) {
                     $query->orderBy('created_at', 'desc');
-                }, function ($query) {
-                    $query->inRandomOrder();
                 })
                 ->paginate($perPage);
 
