@@ -34,12 +34,13 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                         $q->where('name_en', $category);
                     });
                 })
-              ->when($searchQuery && $searchQuery !== 'New', function ($query) use ($searchQuery) {
+                ->when($searchQuery && $searchQuery !== 'New', function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
                 ->when($searchQuery === 'New', function ($query) {
                     $query->orderBy('created_at', 'desc');
                 })
+                ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
             return $this->success('Fetched Store Products', $products);
