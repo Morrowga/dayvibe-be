@@ -32,10 +32,8 @@ class StoreProduct extends Model implements HasMedia
     public function getImageUrlsAttribute()
     {
         return $this->getMedia('store_product_images')->map(function ($media) {
-            $webpUrl = $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
-
             return [
-                'url' => $webpUrl,
+                'url' => route('media.show', $media->id),
             ];
         });
     }
@@ -44,7 +42,7 @@ class StoreProduct extends Model implements HasMedia
     {
         return $this->getMedia('store_product_images')->map(function ($media) {
             return [
-                'url' => $media->getUrl(),
+                'url' => route('media.show', $media->id),
             ];
         });
     }
@@ -57,9 +55,7 @@ class StoreProduct extends Model implements HasMedia
             return null;
         }
 
-        return $media->hasGeneratedConversion('webp')
-            ? $media->getUrl('webp')
-            : $media->getUrl();
+        return route('media.show', $media->id);
     }
 
     public function registerMediaConversions(Media $media = null): void

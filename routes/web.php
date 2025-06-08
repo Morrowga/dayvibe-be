@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\Store\SizeController;
@@ -43,6 +44,8 @@ Route::get('/dashboard', function () {
 Route::get('/test', function() {
     return Carbon::today();
 });
+
+Route::get('/media/{media}', [MediaController::class, 'show'])->name('media.show');
 
 Route::middleware('auth')->group(function () {
     Route::resource('/contents', ContentController::class);
