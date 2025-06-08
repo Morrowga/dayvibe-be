@@ -42,7 +42,7 @@ class StoreProduct extends Model implements HasMedia
     {
         return $this->getMedia('store_product_images')->map(function ($media) {
             return [
-                'url' => route('media.show', $media->id),
+                'url' => $media->getUrl(),
             ];
         });
     }
