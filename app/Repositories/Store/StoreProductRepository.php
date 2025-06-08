@@ -34,10 +34,14 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                         $q->where('name_en', $category);
                     });
                 })
-                ->when($searchQuery, function ($query) use ($searchQuery) {
+                ->when($searchQuery && $searchQuery !== 'latest', function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
-                ->inRandomOrder()
+                ->when($searchQuery === 'latest', function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                }, function ($query) {
+                    $query->inRandomOrder();
+                })
                 ->paginate($perPage);
 
             return $this->success('Fetched Store Products', $products);
@@ -45,7 +49,6 @@ class StoreProductRepository implements StoreProductRepositoryInterface
             return $this->error($e->getMessage(), 500);
         }
     }
-
 
     public function store(Request $request)
     {
