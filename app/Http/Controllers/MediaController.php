@@ -10,6 +10,7 @@ class MediaController extends Controller
 {
     public function show(Media $media)
     {
-        return response()->file(Storage::disk('s3')->path($media->getPath()));
+        abort_unless(auth()->check(), 403);
+        return redirect($media->getUrl());
     }
 }
