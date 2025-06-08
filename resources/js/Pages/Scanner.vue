@@ -452,6 +452,16 @@ const triggerFileInput = () => {
                                     </VCol>
                                 </VRow>
                             </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Order Code:</p>
+                                <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.code }}</p>
+                                <p class="text-sm text-gray-600 my-2">Name:</p>
+                                <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.n }}</p>
+                                <p class="text-sm text-gray-600 my-2">Phone:</p>
+                                <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.p }}</p>
+                                <p class="text-sm text-gray-600 my-2">City:</p>
+                                <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult.data.c }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
