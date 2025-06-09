@@ -27,7 +27,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
         try {
             $category = $request->query('category');
             $searchQuery = $request->query('q');
-            $perPage = 150;
+            $perPage = 30;
             $page = $request->query('page', 1);
             $seed = $request->query('seed');
 
