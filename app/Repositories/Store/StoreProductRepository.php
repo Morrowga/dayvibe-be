@@ -22,14 +22,22 @@ class StoreProductRepository implements StoreProductRepositoryInterface
         }
     }
 
-    public function indexApi(Request $request) {
+    public function indexApi(Request $request)
+    {
         try {
             $category = $request->query('category');
             $searchQuery = $request->query('q');
             $perPage = 150;
-            $seed = $request->query('seed'); // Get seed from frontend
+            $page = $request->query('page', 1);
+            $seed = $request->query('seed');
 
-            $products = StoreProduct::with(['category.sizes', 'media'])
+            // Always generate seed for new searches (page 1 without existing seed)
+            // This makes random ordering the default behavior
+            if ($page == 1 && !$seed) {
+                $seed = mt_rand(1, 999999);
+            }
+
+            $query = StoreProduct::with(['category.sizes', 'media'])
                 ->when($category, function ($query) use ($category) {
                     $query->whereHas('category', function ($q) use ($category) {
                         $q->where('name_en', $category);
@@ -37,21 +45,20 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 })
                 ->when($searchQuery && $searchQuery !== 'New', function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
-                })
-                ->when($searchQuery === 'New', function ($query) {
-                    $query->orderBy('created_at', 'desc');
-                })
-                ->when($searchQuery !== 'New', function ($query) use ($seed) {
-                    // Use deterministic random order with seed
-                    if ($seed) {
-                        $query->orderByRaw("RAND($seed)");
-                    } else {
-                        $query->orderBy('created_at', 'desc');
-                    }
-                })
-                ->paginate($perPage);
+                });
 
-            // Include the seed in response for frontend to use
+            // Apply ordering - Random is now DEFAULT
+            if ($searchQuery === 'New') {
+                // Only "New" search uses chronological order
+                $query->orderBy('created_at', 'desc');
+            } else {
+                // DEFAULT: Use random order with seed for all other cases
+                $query->orderByRaw("RAND($seed)");
+            }
+
+            $products = $query->paginate($perPage);
+
+            // Convert to array and add seed
             $response = $products->toArray();
             $response['seed'] = $seed;
 
