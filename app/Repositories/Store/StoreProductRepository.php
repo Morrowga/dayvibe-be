@@ -27,6 +27,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
             $category = $request->query('category');
             $searchQuery = $request->query('q');
             $perPage = 150;
+            $seed = $request->query('seed'); // Get seed from frontend
 
             $products = StoreProduct::with(['category.sizes', 'media'])
                 ->when($category, function ($query) use ($category) {
@@ -40,10 +41,21 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 ->when($searchQuery === 'New', function ($query) {
                     $query->orderBy('created_at', 'desc');
                 })
-                ->orderBy('created_at', 'desc')
+                ->when($searchQuery !== 'New', function ($query) use ($seed) {
+                    // Use deterministic random order with seed
+                    if ($seed) {
+                        $query->orderByRaw("RAND($seed)");
+                    } else {
+                        $query->orderBy('created_at', 'desc');
+                    }
+                })
                 ->paginate($perPage);
 
-            return $this->success('Fetched Store Products', $products);
+            // Include the seed in response for frontend to use
+            $response = $products->toArray();
+            $response['seed'] = $seed;
+
+            return $this->success('Fetched Store Products', $response);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
