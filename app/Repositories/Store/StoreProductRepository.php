@@ -26,7 +26,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
         try {
             $category = $request->query('category');
             $searchQuery = $request->query('q');
-            $perPage = 30;
+            $perPage = 150;
 
             $products = StoreProduct::with(['category.sizes', 'media'])
                 ->when($category, function ($query) use ($category) {
@@ -37,9 +37,9 @@ class StoreProductRepository implements StoreProductRepositoryInterface
                 ->when($searchQuery && $searchQuery !== 'New', function ($query) use ($searchQuery) {
                     $query->where('name', 'like', '%' . $searchQuery . '%');
                 })
-                // ->when($searchQuery === 'New', function ($query) {
-                //     $query->orderBy('created_at', 'desc');
-                // })
+                ->when($searchQuery === 'New', function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                })
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
