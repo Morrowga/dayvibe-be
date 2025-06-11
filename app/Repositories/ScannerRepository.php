@@ -61,14 +61,18 @@ class ScannerRepository implements ScannerRepositoryInterface
                 ], 422);
             }
 
-            // Try to decode JSON, but also handle plain text QR codes
-            $qrData = json_decode($qrText, true);
+            // Handle Unicode characters and clean the JSON string
+            $cleanedQrText = $this->cleanUnicodeJson($qrText);
+
+            // Try to decode JSON
+            $qrData = json_decode($cleanedQrText, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                // If it's not JSON, treat as plain text
-                Log::info('QR contains plain text, not JSON: ' . $qrText);
+                Log::error('JSON decode error: ' . json_last_error_msg());
+                Log::error('Original QR text: ' . $qrText);
+                Log::error('Cleaned QR text: ' . $cleanedQrText);
+
                 return response()->json([
-                    'message' => 'QR code detected but contains plain text, not structured data',
-                    'text' => $qrText,
+                    'message' => 'QR code does not contain valid JSON data: ' . json_last_error_msg(),
                     'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
                 ], 422);
             }
@@ -93,8 +97,7 @@ class ScannerRepository implements ScannerRepositoryInterface
                 "data" => $qrData,
                 "code" => $uniqueCode,
                 "items" => $itemArray,
-                "mode" => "upload",
-                "raw_text" => $qrText
+                "mode" => "upload"
             ]);
 
         } catch (\Exception $e) {
@@ -106,6 +109,134 @@ class ScannerRepository implements ScannerRepositoryInterface
         }
     }
 
+    private function cleanUnicodeJson($jsonString)
+    {
+        // Remove any BOM or extra quotes at the beginning/end
+        $jsonString = trim($jsonString, '"');
+
+        // Handle Unicode escape sequences properly
+        $jsonString = preg_replace_callback('/\\\\x([0-9a-fA-F]{2})/', function($matches) {
+            return chr(hexdec($matches[1]));
+        }, $jsonString);
+
+        // Handle other Unicode escape sequences
+        $jsonString = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function($matches) {
+            return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UCS-2BE');
+        }, $jsonString);
+
+        // Ensure proper UTF-8 encoding
+        if (!mb_check_encoding($jsonString, 'UTF-8')) {
+            $jsonString = mb_convert_encoding($jsonString, 'UTF-8', 'auto');
+        }
+
+        // Clean up any remaining problematic characters
+        $jsonString = preg_replace('/[\x00-\x1F\x7F]/', '', $jsonString);
+
+        // Try to fix common JSON issues
+        $jsonString = str_replace(['\n', '\r', '\t'], ['', '', ''], $jsonString);
+
+        return $jsonString;
+    }
+
+    private function parseUnicodeJson($jsonString)
+    {
+        // Try different approaches to parse the JSON
+        $attempts = [
+            // Method 1: Direct decode
+            function($str) { return json_decode($str, true); },
+
+            // Method 2: Clean and decode
+            function($str) {
+                $clean = $this->cleanUnicodeJson($str);
+                return json_decode($clean, true);
+            },
+
+            // Method 3: Force UTF-8 and decode
+            function($str) {
+                $utf8 = mb_convert_encoding($str, 'UTF-8', 'auto');
+                return json_decode($utf8, true);
+            },
+
+            // Method 4: Remove problematic characters
+            function($str) {
+                $clean = preg_replace('/[^\x20-\x7E\x{00A0}-\x{FFFF}]/u', '', $str);
+                return json_decode($clean, true);
+            },
+
+            // Method 5: Parse manually if all else fails
+            function($str) {
+                return $this->manualJsonParse($str);
+            }
+        ];
+
+        foreach ($attempts as $attempt) {
+            try {
+                $result = $attempt($jsonString);
+                if ($result !== null && json_last_error() === JSON_ERROR_NONE) {
+                    return $result;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Manual JSON parsing as last resort
+     */
+    private function manualJsonParse($jsonString)
+    {
+        // Extract items array manually
+        if (preg_match('/"items":\s*\[(.*?)\]/', $jsonString, $matches)) {
+            $itemsString = $matches[1];
+            $items = [];
+
+            // Parse each item manually
+            preg_match_all('/\{"id":(\d+),"s":"[^"]*","q":(\d+)\}/', $itemsString, $itemMatches, PREG_SET_ORDER);
+
+            foreach ($itemMatches as $match) {
+                $items[] = [
+                    'id' => (int)$match[1],
+                    's' => '',
+                    'q' => (int)$match[2]
+                ];
+            }
+
+            // Extract other fields
+            $result = ['items' => $items];
+
+            if (preg_match('/"tq":(\d+)/', $jsonString, $tqMatch)) {
+                $result['tq'] = (int)$tqMatch[1];
+            }
+
+            if (preg_match('/"ta":(\d+)/', $jsonString, $taMatch)) {
+                $result['ta'] = (int)$taMatch[1];
+            }
+
+            if (preg_match('/"p":"([^"]+)"/', $jsonString, $pMatch)) {
+                $result['p'] = $pMatch[1];
+            }
+
+            if (preg_match('/"c":"([^"]+)"/', $jsonString, $cMatch)) {
+                $result['c'] = $cMatch[1];
+            }
+
+            if (preg_match('/"timestamp":(\d+)/', $jsonString, $timestampMatch)) {
+                $result['timestamp'] = (int)$timestampMatch[1];
+            }
+
+            // For the name field, try to extract but handle Unicode
+            if (preg_match('/"n":"([^"]*)"/', $jsonString, $nMatch)) {
+                $result['n'] = $nMatch[1]; // Keep as is, might be empty or contain Unicode
+            }
+
+            return $result;
+        }
+
+        return null;
+    }
     /**
      * Enhanced QR detection using multiple methods for maximum reliability
      */
