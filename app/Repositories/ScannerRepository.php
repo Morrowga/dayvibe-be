@@ -65,12 +65,12 @@ class ScannerRepository implements ScannerRepositoryInterface
             }
 
             $qrData = json_decode($qrText, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'message' => 'QR code does not contain valid JSON data',
-                    'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
-                ], 422);
-            }
+            // if (json_last_error() !== JSON_ERROR_NONE) {
+            //     return response()->json([
+            //         'message' => 'QR code does not contain valid JSON data',
+            //         'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
+            //     ], 422);
+            // }
 
             $uniqueCode = $this->getNextAvailableCode();
 
