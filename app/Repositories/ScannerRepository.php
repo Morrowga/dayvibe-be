@@ -48,7 +48,7 @@ class ScannerRepository implements ScannerRepositoryInterface
             $path = $file->store('temp/qr-uploads', 'local');
             $fullPath = storage_path('app/' . $path);
 
-            $qrText = $this->detectQRWithGoogleVision($fullPath);
+            $qrText = $this->detectQRWithZXing($fullPath);
 
             if (empty($qrText)) {
                 $qrcode = new QrReader($fullPath);
@@ -104,13 +104,25 @@ class ScannerRepository implements ScannerRepositoryInterface
         }
     }
 
-    private function detectQRWithGoogleVision($imagePath)
+    private function detectQRWithZXing($imagePath)
     {
         try {
-            $qrcode = new QrReader($imagePath);
-            return $qrcode->text();
+            $response = Http::timeout(30)
+                ->attach('file', file_get_contents($imagePath), basename($imagePath))
+                ->post('https://zxing.org/w/decode');
+
+            if ($response->successful()) {
+                $content = $response->body();
+
+                // Parse HTML response to extract QR data
+                if (preg_match('/Raw text<\/td><td[^>]*>([^<]+)<\/td>/', $content, $matches)) {
+                    return trim($matches[1]);
+                }
+            }
+
+            return null;
         } catch (\Exception $e) {
-            Log::error('Local QR detection failed: ' . $e->getMessage());
+            Log::error('ZXing QR detection failed: ' . $e->getMessage());
             return null;
         }
     }
