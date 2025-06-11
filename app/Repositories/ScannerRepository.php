@@ -48,10 +48,9 @@ class ScannerRepository implements ScannerRepositoryInterface
             $path = $file->store('temp/qr-uploads', 'local');
             $fullPath = storage_path('app/' . $path);
 
-            // Enhanced QR detection with multiple methods
-            $qrText = $this->detectQRCodeWithMultipleMethods($fullPath);
+            // Try multiple detection methods
+            $qrText = $this->detectQRWithMultipleMethods($fullPath);
 
-            // Clean up the uploaded file
             Storage::disk('local')->delete($path);
 
             if (empty($qrText)) {
@@ -61,31 +60,27 @@ class ScannerRepository implements ScannerRepositoryInterface
                 ], 422);
             }
 
-            // Try to decode JSON, but also handle plain text QR codes
             $qrData = json_decode($qrText, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                // If it's not JSON, treat as plain text
-                Log::info('QR contains plain text, not JSON: ' . $qrText);
                 return response()->json([
-                    'message' => 'QR code detected but contains plain text, not structured data',
-                    'text' => $qrText,
+                    'message' => 'QR code does not contain valid JSON data',
                     'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
                 ], 422);
             }
 
             $uniqueCode = $this->getNextAvailableCode();
+
             $itemArray = [];
 
-            if (isset($qrData['items']) && is_array($qrData['items'])) {
-                foreach($qrData['items'] as $item) {
-                    $product = StoreProduct::find($item['id']);
-                    if(!empty($product)) {
-                        $itemArray[] = [
-                            "id" => $product->id,
-                            "img" => $product->first_image,
-                            "quantity" => $item['q']
-                        ];
-                    }
+            foreach($qrData['items'] as $item) {
+                $product = StoreProduct::find($item['id']);
+                if(!empty($product))
+                {
+                    $itemArray[] = [
+                        "id" => $product->id,
+                        "img" => $product->first_image,
+                        "quantity" => $item['q']
+                    ];
                 }
             }
 
@@ -93,8 +88,7 @@ class ScannerRepository implements ScannerRepositoryInterface
                 "data" => $qrData,
                 "code" => $uniqueCode,
                 "items" => $itemArray,
-                "mode" => "upload",
-                "raw_text" => $qrText
+                "mode" => "upload"
             ]);
 
         } catch (\Exception $e) {
@@ -109,28 +103,60 @@ class ScannerRepository implements ScannerRepositoryInterface
     /**
      * Enhanced QR detection using multiple methods for maximum reliability
      */
-    private function detectQRCodeWithMultipleMethods($imagePath)
+    private function detectQRWithMultipleMethods($imagePath)
     {
-        $methods = [
-            'detectQRWithLocalLibrary',
-            'detectQRWithAPI1',
-            'detectQRWithAPI2',
-            'detectQRWithAPI3',
-            'detectQRWithZXingImproved',
-            'detectQRWithImagePreprocessing'
-        ];
-
-        foreach ($methods as $method) {
-            try {
-                $result = $this->$method($imagePath);
-                if (!empty($result)) {
-                    Log::info("QR detected successfully with method: {$method}");
-                    return $result;
-                }
-            } catch (\Exception $e) {
-                Log::warning("QR detection method {$method} failed: " . $e->getMessage());
-                continue;
+        // Method 1: Local library
+        try {
+            $qrcode = new QrReader($imagePath);
+            $text = $qrcode->text();
+            if (!empty($text)) {
+                return $text;
             }
+        } catch (\Exception $e) {
+            Log::warning('Local QR detection failed: ' . $e->getMessage());
+        }
+
+        // Method 2: QR Server API
+        try {
+            $response = Http::timeout(30)
+                ->attach('file', file_get_contents($imagePath), basename($imagePath))
+                ->post('https://api.qrserver.com/v1/read-qr-code/');
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data[0]['symbol'][0]['data']) && !empty($data[0]['symbol'][0]['data'])) {
+                    return $data[0]['symbol'][0]['data'];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('QR Server API failed: ' . $e->getMessage());
+        }
+
+        // Method 3: Alternative API
+        try {
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://qr-scanner-api.herokuapp.com/decode',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => [
+                    'file' => new \CURLFile($imagePath)
+                ]
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode == 200 && $response) {
+                $data = json_decode($response, true);
+                if (isset($data['text']) && !empty($data['text'])) {
+                    return $data['text'];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Alternative API failed: ' . $e->getMessage());
         }
 
         return null;
