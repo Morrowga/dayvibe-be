@@ -104,25 +104,37 @@ class ScannerRepository implements ScannerRepositoryInterface
         }
     }
 
-    private function detectQRWithExternalService($imagePath)
+    private function detectQRWithGoogleVision($imagePath)
     {
         try {
             $response = Http::timeout(30)
-                ->attach('file', file_get_contents($imagePath), basename($imagePath))
-                ->post('https://api.qrserver.com/v1/read-qr-code/');
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->getGoogleAccessToken(),
+                    'Content-Type' => 'application/json',
+                ])
+                ->post('https://vision.googleapis.com/v1/images:annotate', [
+                    'requests' => [
+                        [
+                            'image' => [
+                                'content' => base64_encode(file_get_contents($imagePath))
+                            ],
+                            'features' => [
+                                ['type' => 'TEXT_DETECTION', 'maxResults' => 10]
+                            ]
+                        ]
+                    ]
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-
-                if (isset($data[0]['symbol'][0]['data']) && !empty($data[0]['symbol'][0]['data'])) {
-                    return $data[0]['symbol'][0]['data'];
+                if (isset($data['responses'][0]['textAnnotations'][0]['description'])) {
+                    return $data['responses'][0]['textAnnotations'][0]['description'];
                 }
             }
 
             return null;
-
         } catch (\Exception $e) {
-            Log::error('External QR detection failed: ' . $e->getMessage());
+            Log::error('Google Vision QR detection failed: ' . $e->getMessage());
             return null;
         }
     }
