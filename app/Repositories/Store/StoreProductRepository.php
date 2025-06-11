@@ -15,7 +15,7 @@ class StoreProductRepository implements StoreProductRepositoryInterface
 
     public function index() {
         try {
-            $storeProducts = StoreProduct::with(['category', 'media'])->orderBy('id', 'DESC')->limit(250)->get();
+            $storeProducts = StoreProduct::with(['category', 'media'])->orderBy('id', 'DESC')->limit(1000)->get();
             return $this->success('Fetched Store Products', $storeProducts);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
