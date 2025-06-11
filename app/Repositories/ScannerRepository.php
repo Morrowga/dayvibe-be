@@ -110,7 +110,6 @@ class ScannerRepository implements ScannerRepositoryInterface
             $response = Http::timeout(30)
                 ->attach('file', file_get_contents($imagePath), basename($imagePath))
                 ->post('https://zxing.org/w/decode');
-
             if ($response->successful()) {
                 $content = $response->body();
 
