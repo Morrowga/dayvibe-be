@@ -110,7 +110,6 @@ class ScannerRepository implements ScannerRepositoryInterface
             $response = Http::timeout(30)
                 ->attach('file', file_get_contents($imagePath), basename($imagePath))
                 ->post('https://api.qrserver.com/v1/read-qr-code/');
-
             if ($response->successful()) {
                 $data = $response->json();
 
