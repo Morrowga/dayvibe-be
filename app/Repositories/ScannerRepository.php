@@ -48,7 +48,7 @@ class ScannerRepository implements ScannerRepositoryInterface
             $path = $file->store('temp/qr-uploads', 'local');
             $fullPath = storage_path('app/' . $path);
 
-            $qrText = $this->detectQRWithExternalService($fullPath);
+            $qrText = $this->detectQRWithGoogleVision($fullPath);
 
             if (empty($qrText)) {
                 $qrcode = new QrReader($fullPath);
