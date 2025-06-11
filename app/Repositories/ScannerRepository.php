@@ -48,13 +48,10 @@ class ScannerRepository implements ScannerRepositoryInterface
             $path = $file->store('temp/qr-uploads', 'local');
             $fullPath = storage_path('app/' . $path);
 
-            $qrText = $this->detectQRWithZXing($fullPath);
+            // Enhanced QR detection with multiple methods
+            $qrText = $this->detectQRCodeWithMultipleMethods($fullPath);
 
-            if (empty($qrText)) {
-                $qrcode = new QrReader($fullPath);
-                $qrText = $qrcode->text();
-            }
-
+            // Clean up the uploaded file
             Storage::disk('local')->delete($path);
 
             if (empty($qrText)) {
@@ -64,27 +61,31 @@ class ScannerRepository implements ScannerRepositoryInterface
                 ], 422);
             }
 
+            // Try to decode JSON, but also handle plain text QR codes
             $qrData = json_decode($qrText, true);
-            // if (json_last_error() !== JSON_ERROR_NONE) {
-            //     return response()->json([
-            //         'message' => 'QR code does not contain valid JSON data',
-            //         'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
-            //     ], 422);
-            // }
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // If it's not JSON, treat as plain text
+                Log::info('QR contains plain text, not JSON: ' . $qrText);
+                return response()->json([
+                    'message' => 'QR code detected but contains plain text, not structured data',
+                    'text' => $qrText,
+                    'errors' => ['qr_image' => ['QR code does not contain valid JSON data']]
+                ], 422);
+            }
 
             $uniqueCode = $this->getNextAvailableCode();
-
             $itemArray = [];
 
-            foreach($qrData['items'] as $item) {
-                $product = StoreProduct::find($item['id']);
-                if(!empty($product))
-                {
-                    $itemArray[] = [
-                        "id" => $product->id,
-                        "img" => $product->first_image,
-                        "quantity" => $item['q']
-                    ];
+            if (isset($qrData['items']) && is_array($qrData['items'])) {
+                foreach($qrData['items'] as $item) {
+                    $product = StoreProduct::find($item['id']);
+                    if(!empty($product)) {
+                        $itemArray[] = [
+                            "id" => $product->id,
+                            "img" => $product->first_image,
+                            "quantity" => $item['q']
+                        ];
+                    }
                 }
             }
 
@@ -92,7 +93,8 @@ class ScannerRepository implements ScannerRepositoryInterface
                 "data" => $qrData,
                 "code" => $uniqueCode,
                 "items" => $itemArray,
-                "mode" => "upload"
+                "mode" => "upload",
+                "raw_text" => $qrText
             ]);
 
         } catch (\Exception $e) {
@@ -104,7 +106,137 @@ class ScannerRepository implements ScannerRepositoryInterface
         }
     }
 
-    private function detectQRWithZXing($imagePath)
+    /**
+     * Enhanced QR detection using multiple methods for maximum reliability
+     */
+    private function detectQRCodeWithMultipleMethods($imagePath)
+    {
+        $methods = [
+            'detectQRWithLocalLibrary',
+            'detectQRWithAPI1',
+            'detectQRWithAPI2',
+            'detectQRWithAPI3',
+            'detectQRWithZXingImproved',
+            'detectQRWithImagePreprocessing'
+        ];
+
+        foreach ($methods as $method) {
+            try {
+                $result = $this->$method($imagePath);
+                if (!empty($result)) {
+                    Log::info("QR detected successfully with method: {$method}");
+                    return $result;
+                }
+            } catch (\Exception $e) {
+                Log::warning("QR detection method {$method} failed: " . $e->getMessage());
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Method 1: Local library (fastest)
+     */
+    private function detectQRWithLocalLibrary($imagePath)
+    {
+        try {
+            $qrcode = new QrReader($imagePath);
+            $text = $qrcode->text();
+            return !empty($text) ? $text : null;
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Method 2: QR Server API
+     */
+    private function detectQRWithAPI1($imagePath)
+    {
+        try {
+            $response = Http::timeout(30)
+                ->attach('file', file_get_contents($imagePath), basename($imagePath))
+                ->post('https://api.qrserver.com/v1/read-qr-code/');
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data[0]['symbol'][0]['data']) && !empty($data[0]['symbol'][0]['data'])) {
+                    return $data[0]['symbol'][0]['data'];
+                }
+            }
+            return null;
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Method 3: Base64 API approach
+     */
+    private function detectQRWithAPI2($imagePath)
+    {
+        try {
+            $imageData = base64_encode(file_get_contents($imagePath));
+
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('https://qr-code-reader-api.herokuapp.com/decode', [
+                    'image' => $imageData,
+                    'format' => 'base64'
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['text'] ?? $data['data'] ?? null;
+            }
+            return null;
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Method 4: Alternative API
+     */
+    private function detectQRWithAPI3($imagePath)
+    {
+        try {
+            $ch = curl_init();
+
+            curl_setopt_array($ch, [
+                CURLOPT_URL => 'https://qr-scanner-api.herokuapp.com/decode',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => [
+                    'file' => new \CURLFile($imagePath)
+                ],
+                CURLOPT_HTTPHEADER => [
+                    'User-Agent: Mozilla/5.0 (compatible; QR-Scanner/1.0)'
+                ]
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode == 200 && $response) {
+                $data = json_decode($response, true);
+                return $data['qr_code_text'] ?? $data['text'] ?? $data['data'] ?? null;
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Method 5: Improved ZXing detection
+     */
+    private function detectQRWithZXingImproved($imagePath)
     {
         try {
             $response = Http::timeout(30)
@@ -113,17 +245,151 @@ class ScannerRepository implements ScannerRepositoryInterface
             if ($response->successful()) {
                 $content = $response->body();
 
-                // Parse HTML response to extract QR data
-                if (preg_match('/Raw text<\/td><td[^>]*>([^<]+)<\/td>/', $content, $matches)) {
-                    return trim($matches[1]);
+                // Multiple regex patterns to extract QR data
+                $patterns = [
+                    '/Raw text<\/td><td[^>]*>([^<]+)<\/td>/',
+                    '/Raw text<\/td><td[^>]*><pre>([^<]+)<\/pre>/',
+                    '/<pre[^>]*>([^<]+)<\/pre>/',
+                    '/Parsed Result Type[^>]*>([^<]+)</',
+                ];
+
+                foreach ($patterns as $pattern) {
+                    if (preg_match($pattern, $content, $matches)) {
+                        $text = html_entity_decode(trim($matches[1]));
+                        if (!empty($text)) {
+                            return $text;
+                        }
+                    }
                 }
             }
 
             return null;
         } catch (\Exception $e) {
-            Log::error('ZXing QR detection failed: ' . $e->getMessage());
-            return null;
+            throw $e;
         }
+    }
+
+    /**
+     * Method 6: Image preprocessing + detection
+     */
+    private function detectQRWithImagePreprocessing($imagePath)
+    {
+        try {
+            // Create enhanced versions of the image
+            $enhancedPaths = $this->preprocessImage($imagePath);
+
+            foreach ($enhancedPaths as $enhancedPath) {
+                try {
+                    // Try local library on enhanced image
+                    $qrcode = new QrReader($enhancedPath);
+                    $text = $qrcode->text();
+
+                    // Clean up enhanced image
+                    if (file_exists($enhancedPath)) {
+                        unlink($enhancedPath);
+                    }
+
+                    if (!empty($text)) {
+                        return $text;
+                    }
+                } catch (\Exception $e) {
+                    // Clean up on error
+                    if (file_exists($enhancedPath)) {
+                        unlink($enhancedPath);
+                    }
+                    continue;
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Preprocess image to improve QR detection
+     */
+    private function preprocessImage($imagePath)
+    {
+        $enhancedPaths = [];
+        $tempDir = storage_path('app/temp/');
+
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        try {
+            // Enhancement 1: Increase contrast and brightness
+            $enhanced1 = $tempDir . 'enhanced1_' . basename($imagePath);
+            $this->enhanceImage($imagePath, $enhanced1, 'contrast');
+            $enhancedPaths[] = $enhanced1;
+
+            // Enhancement 2: Convert to grayscale and threshold
+            $enhanced2 = $tempDir . 'enhanced2_' . basename($imagePath);
+            $this->enhanceImage($imagePath, $enhanced2, 'threshold');
+            $enhancedPaths[] = $enhanced2;
+
+            // Enhancement 3: Resize for better detection
+            $enhanced3 = $tempDir . 'enhanced3_' . basename($imagePath);
+            $this->enhanceImage($imagePath, $enhanced3, 'resize');
+            $enhancedPaths[] = $enhanced3;
+
+        } catch (\Exception $e) {
+            Log::warning('Image preprocessing failed: ' . $e->getMessage());
+        }
+
+        return $enhancedPaths;
+    }
+
+    /**
+     * Apply image enhancements using GD library
+     */
+    private function enhanceImage($sourcePath, $targetPath, $type)
+    {
+        $imageInfo = getimagesize($sourcePath);
+        $mime = $imageInfo['mime'];
+
+        switch ($mime) {
+            case 'image/jpeg':
+                $image = imagecreatefromjpeg($sourcePath);
+                break;
+            case 'image/png':
+                $image = imagecreatefrompng($sourcePath);
+                break;
+            case 'image/gif':
+                $image = imagecreatefromgif($sourcePath);
+                break;
+            default:
+                throw new \Exception('Unsupported image type');
+        }
+
+        switch ($type) {
+            case 'contrast':
+                imagefilter($image, IMG_FILTER_CONTRAST, -50);
+                imagefilter($image, IMG_FILTER_BRIGHTNESS, 30);
+                break;
+
+            case 'threshold':
+                imagefilter($image, IMG_FILTER_GRAYSCALE);
+                imagefilter($image, IMG_FILTER_CONTRAST, -100);
+                break;
+
+            case 'resize':
+                $width = imagesx($image);
+                $height = imagesy($image);
+                $newWidth = $width * 2;
+                $newHeight = $height * 2;
+
+                $resized = imagecreatetruecolor($newWidth, $newHeight);
+                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                imagedestroy($image);
+                $image = $resized;
+                break;
+        }
+
+        imagejpeg($image, $targetPath, 95);
+        imagedestroy($image);
     }
 
     /**
@@ -152,14 +418,17 @@ class ScannerRepository implements ScannerRepositoryInterface
 
             $itemArray = [];
 
-            foreach($qrData['items'] as $item)
-            {
-                $product = StoreProduct::find($item['id']);
-                $itemArray[] = [
-                    "img" => $product->first_image,
-                    "id" => $product->id,
-                    "quantity" => $item['q']
-                ];
+            if (isset($qrData['items']) && is_array($qrData['items'])) {
+                foreach($qrData['items'] as $item) {
+                    $product = StoreProduct::find($item['id']);
+                    if ($product) {
+                        $itemArray[] = [
+                            "img" => $product->first_image,
+                            "id" => $product->id,
+                            "quantity" => $item['q']
+                        ];
+                    }
+                }
             }
 
             return response()->json([
