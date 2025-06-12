@@ -244,7 +244,7 @@ const triggerFileInput = () => {
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
                 <!-- Mode Selection -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <!-- <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Select Action</h3>
                         <div class="flex space-x-4">
@@ -272,7 +272,7 @@ const triggerFileInput = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- QR Upload Section -->
                 <div v-if="searchMode === 'upload'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
