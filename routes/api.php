@@ -59,11 +59,12 @@ Route::middleware(['token'])->group(function () {
     Route::get('/locations', [StoreLocationController::class, 'index']);
 
     Route::post('/locations', [StoreLocationController::class, 'store']);
+
+    Route::post('/qr-order', [ScannerController::class, 'order'])->name('scanner.order');
 });
 
 
 Route::post('/scanner', [ScannerController::class, 'store'])->name('scanner.store');
-Route::post('/qr-order', [ScannerController::class, 'order'])->name('scanner.order');
 
 
 
