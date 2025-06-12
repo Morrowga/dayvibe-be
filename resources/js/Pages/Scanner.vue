@@ -380,7 +380,6 @@ const triggerFileInput = () => {
                             </div>
                         </div>
 
-                        <!-- Loading Overlay for Search -->
                         <div v-if="isSearching" class="mt-4 p-4 bg-green-50 border border-green-200 rounded">
                             <div class="flex items-center space-x-2">
                                 <svg class="animate-spin h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -402,22 +401,7 @@ const triggerFileInput = () => {
                     </div>
                 </div>
 
-                <!-- Results Card - Dev Info -->
-                <!-- <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" v-if="uploadResult && uploadResult.data">
-                    <div class="p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">QR Code Dev</h3>
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <p class="text-sm text-gray-600 mb-1">Decoded Data:</p>
-                                    <p class="font-mono text-sm bg-white p-2 rounded border break-all">{{ uploadResult }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
 
-                <!-- Results Card - QR Data -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" v-if="uploadResult && uploadResult.data">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">QR Code Data</h3>
@@ -466,7 +450,6 @@ const triggerFileInput = () => {
                     </div>
                 </div>
 
-                <!-- Order Process Section - Only show for upload mode and when order hasn't been processed -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" v-if="uploadResult && uploadResult.data && searchMode === 'upload'">
                     <div class="p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Order Process</h3>

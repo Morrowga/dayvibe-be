@@ -583,13 +583,16 @@ class ScannerRepository implements ScannerRepositoryInterface
 
     public function order(Request $request) {
         try {
+            $randomCode = $this->generateRandomCode(4);
+
             $order = QROrder::create([
                 "body" => $request->data,
-                "code" => $request->code
+                "code" => $randomCode
             ]);
 
             return response()->json([
                 "message" => "success",
+                "data" => $order
             ]);
 
         } catch (\Exception $e) {
@@ -597,6 +600,17 @@ class ScannerRepository implements ScannerRepositoryInterface
 
             return response()->json(['general' => 'Error processing Order: ' . $e->getMessage()]);
         }
+    }
+
+    private function generateRandomCode($length = 4) {
+        $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $code = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $code .= $characters[rand(0, strlen($characters) - 1)];
+        }
+
+        return $code;
     }
 
     private function getNextAvailableCode() {
