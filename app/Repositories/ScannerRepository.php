@@ -593,6 +593,7 @@ class ScannerRepository implements ScannerRepositoryInterface
 
             return response()->json([
                 "message" => "success",
+                "data" => $order
             ]);
 
         } catch (\Exception $e) {
